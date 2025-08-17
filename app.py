@@ -2,6 +2,7 @@
 #Librairies
 from sklearn.metrics import precision_score, f1_score
 import numpy as np
+import pandas as pd
 from flask import Flask, request, jsonify, render_template
 from sklearn.preprocessing import StandardScaler
 import pickle
@@ -9,7 +10,7 @@ import json
 
 
 # Charger le modèle Isolation Forest pré-entrainé à partir du fichier pickle
-with open('finance-project_credit-card-fraud-detection.sav', 'rb') as model_file:
+with open('creditcard_fraud_rf.sav', 'rb') as model_file:
     model = pickle.load(model_file)
 
     
@@ -28,6 +29,16 @@ def predict():
         # Lire les données CSV en un DataFrame
         df = pd.read_csv(file)
 
+        # Supprimer les colonnes inutiles si elles existent
+        if "Time" in df.columns:
+            df = df.drop("Time", axis=1)
+        if "Class" in df.columns:
+            y_true = df["Class"].values  # garder de côté pour évaluation
+            df = df.drop("Class", axis=1)
+        else:
+            y_true = None
+
+
         # Prétraitement des données (vous devrez adapter ceci en fonction de votre modèle)
         sc = StandardScaler()
         df = sc.fit_transform(df)
@@ -36,26 +47,52 @@ def predict():
         predictions = model.predict(df)
         
         
-        # Mapper les prédictions (0 et 1) aux libellés ("transaction normale" et "fraude détectée")
-        y_pred_labels = ["transaction normale" if pred == 0 else "fraude détectée" for pred in predictions]
-        y_pred_labels = pd.DataFrame(y_pred_labels)
-        
+        # Conversion en labels texte
+        labels = ["transaction normale" if pred == 0 else "fraude détectée" for pred in predictions]
+
+        # Résultats ligne par ligne
+        results = []
+        for i in range(len(predictions)):
+            results.append({
+                "prediction": int(predictions[i]),
+                "label": labels[i],
+                "true_label": int(y_true[i]),
+                "correct": bool(predictions[i] == y_true[i])
+            })
+
+
+        # Métriques globales
+        precision = precision_score(y_true, predictions, zero_division=0)
+        f1 = f1_score(y_true, predictions, zero_division=0)
+
+        global_metrics = {
+            "precision": float(precision),
+            "f1_score": float(f1)
+        }
+
+
+        # JSON final
+        output = {
+            "results": results,
+            "global_metrics": global_metrics
+        }
+
 
         # Créer un DataFrame avec les prédictions et les indicateurs de performance
-        result_df = pd.DataFrame({
-            "predictions": list(predictions),
-            "labels": y_pred_labels[0],
-            "precision": [precision] * len(predictions),
-            "f1_score": [f1] * len(predictions)
-        })
+        #result_df = pd.DataFrame({
+        #    "predictions": list(predictions),
+        #    "labels": y_pred_labels[0],
+        #    "precision": [precision] * len(predictions),
+        #    "f1_score": [f1] * len(predictions)
+        #})
 
         # Créez un dictionnaire pour stocker les résultats
-        results = {
-            "predictions": list(predictions),
-            "labels": list(y_pred_labels[0]),
-            "precision": float(precision),  # Convertissez la précision en nombre à virgule flottante
-            "f1_score": float(f1)  # Convertissez le F1-score en nombre à virgule flottante
-        }
+        #results = {
+        #    "predictions": list(predictions),
+        #    "labels": list(y_pred_labels[0]),
+        #    "precision": float(precision),  # Convertissez la précision en nombre à virgule flottante
+        #    "f1_score": float(f1)  # Convertissez le F1-score en nombre à virgule flottante
+        #}
 
         # Enregistrez les résultats dans un fichier JSON dans le répertoire de travail
         nom_fichier_json = "donnees.json"
@@ -64,7 +101,7 @@ def predict():
         with open(nom_fichier_json, "w") as fichier_json:
             json.dump(results, fichier_json)
 
-        return jsonify(results)
+        return jsonify(output)
 
     except Exception as e:
         return jsonify({"error": str(e)})

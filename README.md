@@ -62,6 +62,9 @@ Sortie : prédiction binaire
 0 → Transaction normale
 1 → Fraude détectée
 
+Appel par requete Curl : curl -X POST -F "file=@nomdufichier.csv" http://127.0.0.1:5000/predict
+(attention au format des données)
+
 📚 Bibliothèques utilisées
 
 pandas, numpy, matplotlib, seaborn

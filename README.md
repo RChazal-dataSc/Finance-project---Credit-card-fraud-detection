@@ -1,20 +1,77 @@
-# Finance-project---Credit-card-fraud-detection
-ML and DL script for Fraudulous credit card transaction detection
+💳 Credit Card Fraud Detection
 
-- Quel était le problème ?
+🎯 Objectif
 
-Parmi un jeu de données de transactions bancaires, identifier les fraudes.
+Détecter automatiquement les transactions bancaires frauduleuses parmi un grand volume de transactions.
+Dataset utilisé : Kaggle – Credit Card Fraud Detection.
 
-- Quelle méthode avez-vous suivi pour le résoudre ? Quels outils avez-vous choisi ?
+Transactions totales : 284 807
 
-Analyse et nettoyage du jeu de données, matrice de correlation, oversampling SMOTE, standard scaler, encodage, isolation forest, random forest, ANN tensorfow.keras.
-Pour le fun, création d'une API très simple avec Flask.
+Fraudes : 492 (0.17%)
 
-- Éventuellement, quelques remarques sur le code programmé.
+Particularité : classes extrêmement déséquilibrées
 
-Pas grand chose à dire, ce code n'a rien de particulier
+🔧 Pipeline
+1. Exploration et préparation des données
 
-- Des exemples de résultats obtenus.
+Vérification des valeurs manquantes et infinies → aucune.
+Analyse de la distribution des variables et de la corrélation avec la cible.
+Normalisation des données avec StandardScaler.
+Suppression de la variable Time (faible intérêt).
 
-L'isolation forest a été décevante, malgré le fait que cet algo est adapté pour la détection de cibles très minoritaires. La random forest a été l'algo le plus performant (acc_train :  0.986 acc_test : 0.9859592847395152, F1score_train :  0.986 F1score_test :  0.9859590684070437), avec très peu de mal classés.
-Le réseau de neurones n'a pas fait mieux, je l'ai donc écarté.
+2. Gestion du déséquilibre
+
+Application de Borderline-SMOTE pour rééquilibrer les classes (492 → 284k échantillons synthétiques).
+
+3. Modélisation
+
+Trois approches principales ont été testées :
+
+Isolation Forest (non supervisé, adapté aux anomalies rares) → résultats insatisfaisants.
+
+Modèles supervisés classiques :
+
+Régression Logistique
+
+Random Forest
+
+Réseau de Neurones (ANN) :
+Input layer (64 neurones, ReLU)
+Hidden layers (32 & 16 neurones, ReLU + Dropout)
+Output layer (sigmoïde)
+Optimiseur Adam
+
+📊 Résultats
+Modèle	Accuracy	Precision	Recall	F1-score
+Isolation Forest	❌	-	-	-
+Régression Logistique	0.986	0.985	0.986	0.986
+Random Forest	0.9998	0.9998	0.9998	0.9998
+ANN (Keras)	0.9988	0.9984	0.9991	0.9988
+
+👉 Meilleures performances : Random Forest & ANN
+
+La Random Forest reste la plus simple et robuste.
+L’ANN a produit des résultats comparables, tout en montrant un bon équilibre précision/rappel.
+
+🚀 Déploiement (bonus)
+
+Un modèle Random Forest a été sauvegardé (pickle) et intégré dans une API Flask minimale :
+Entrée : caractéristiques d’une transaction
+Sortie : prédiction binaire
+
+0 → Transaction normale
+1 → Fraude détectée
+
+📚 Bibliothèques utilisées
+
+pandas, numpy, matplotlib, seaborn
+scikit-learn, imbalanced-learn
+tensorflow.keras
+flask
+etc...
+
+🧠 Perspectives
+
+Amélioration du réseau de neurones (plus d’epochs, tuning des hyperparamètres).
+Test d’algorithmes de boosting (XGBoost, LightGBM).
+Déploiement d’une API complète avec documentation (Swagger / FastAPI).
